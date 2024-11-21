@@ -1,0 +1,56 @@
+import json
+import boto3
+# import botocore.config
+import base64
+from base64 import b64decode
+
+def lambda_handler(event, context):
+    
+    try:
+        llmInput1=event['data']
+        bytes1 = b64decode(llmInput1, validate=True)
+        
+        prompt="\n\nHuman:The task is to identify and extract only 'Net total' nothing else from the Input document and return it. The response should contain net total only and not additional words\n\nAssistant:" 
+
+        message = {
+        
+            "role": "user", 
+            "content": [ 
+                { 
+                "text": prompt 
+                }, 
+                { 
+                "document": { 
+                    "name": "invoice1", 
+                    "format": "pdf", 
+                    "source": { 
+                        "bytes": bytes1 
+                    } 
+                } 
+                }
+            ] 
+        } 
+        messages = []
+        messages.append(message)
+
+        modelId = 'anthropic.claude-3-haiku-20240307-v1:0'
+        accept = 'application/json'
+        contentType = 'application/json'
+		#provide your access and secret keys, region  below
+        bedrock_runtime_client = boto3.client(
+            'bedrock-runtime',
+            aws_access_key_id='', 
+            aws_secret_access_key='',
+            region_name='')
+        response = bedrock_runtime_client.converse(modelId=modelId,messages=messages)
+        #print(f"output", response['output']['message']['content'])
+        return response['output']['message']['content']
+
+    except Exception as ex:
+        print("Error in the main method :",ex)
+        return{
+            'statusCode':400,
+            'errorMessage':"Model Error"
+        }
+    
+
